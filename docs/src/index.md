@@ -31,6 +31,7 @@ using PVlib
 using Dates
 using TimeZones
 using Plots
+using JSON
 ```
 
 Set site and time parameters:
@@ -44,12 +45,31 @@ end_date = Date(2023, 1, 1)
 tz = TimeZone("America/Denver")
 ```
 
-Fetch weather data (PVGIS TMY):
+Fetch weather data. Usually this would be done by accessing the PVGIS or NSRDB data sources. However, for documentation purposes, an example dataset has been saved and is loaded here:
 
 ```@example pvlib_quick
-weather_data = get_meteorological_data_pvgis(
-    latitude, longitude, start_date, end_date, tz, false
-);
+#weather_data = get_meteorological_data_pvgis(
+#    latitude, longitude, start_date, end_date, tz, false
+#);
+
+weather_data_txt = read("../../data/weather_data.json", String)
+weather_rows = JSON.parse(weather_data_txt)
+weather_data = [
+    WeatherSample(
+        ZonedDateTime(r["time"]),
+        isnothing(r["ghi"]) ? missing : r["ghi"],
+        isnothing(r["dni"]) ? missing : r["dni"],
+        isnothing(r["dhi"]) ? missing : r["dhi"],
+        isnothing(r["temp_air"]) ? missing : r["temp_air"],
+        isnothing(r["temp_dew"]) ? missing : r["temp_dew"],
+        isnothing(r["relative_humidity"]) ? missing : r["relative_humidity"],
+        isnothing(r["pressure"]) ? missing : r["pressure"],
+        isnothing(r["wind_speed"]) ? missing : r["wind_speed"],
+        isnothing(r["wind_direction"]) ? missing : r["wind_direction"],
+        isnothing(r["albedo"]) ? missing : r["albedo"],
+    )
+    for r in weather_rows
+]
 ```
 
 Calculate solar positions:
