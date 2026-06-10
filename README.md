@@ -1,2 +1,2 @@
 # PVlib.jl
-Photovoltaic modeling package built out in Julia.
+Photovoltaic and floating solar modeling package built out in Julia.
