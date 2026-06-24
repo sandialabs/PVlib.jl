@@ -54,6 +54,7 @@ export sapm_module_temperature, sapm_cell_temperature
 export read_solar_module, sapm_effective_irradiance, sapm_dc_components
 export read_solar_inverter, sandia_ac_power
 export panel_tilt_azimuth,
+    panel_tilt_azimuth_3dof,
     get_ocean_surface_albedo,
     rolling_average_sapm_cell_temperature,
     get_shaded_fraction,

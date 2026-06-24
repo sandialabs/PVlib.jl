@@ -21,6 +21,13 @@ end
         yaw_offset_deg::Real = 0.0
     ) -> (tilt, azimuth)
 
+    panel_tilt_azimuth(
+        motion::AbstractVector{<:Real},
+        install_tilt_deg::Real = 0.0,
+        install_azimuth_deg::Real = 0.0,
+        yaw_offset_deg::Real = 0.0
+    ) -> (tilt, azimuth)
+
 Compute the panel tilt and azimuth time series from a 6-DOF motion array.
 
 This function interprets columns 4–6 of `motion` as roll, pitch, and yaw,
@@ -97,6 +104,69 @@ function panel_tilt_azimuth(
     azimuth = mod.(azimuth_raw, 2π)
 
     return rad2deg.(tilt), rad2deg.(azimuth), nz
+end
+
+function panel_tilt_azimuth(
+    motion::AbstractVector{<:Real},
+    install_tilt_deg::Real = 0.0,
+    install_azimuth_deg::Real = 0.0,
+    yaw_offset_deg::Real = 0.0,
+)
+    tilt, azimuth, nz = panel_tilt_azimuth(
+        reshape(motion, 1, :),
+        install_tilt_deg,
+        install_azimuth_deg,
+        yaw_offset_deg,
+    )
+    return tilt[1], azimuth[1], nz[1]
+end
+
+function panel_tilt_azimuth_3dof(
+    motion::AbstractMatrix{<:Real},
+    install_tilt_deg::Real = 0.0,
+    install_azimuth_deg::Real = 0.0,
+    yaw_offset_deg::Real = 0.0,
+)
+    @assert size(motion, 2) == 3 "3-DOF motion matrix must have 3 columns"
+
+    yaw = motion[:, 3] .+ deg2rad(yaw_offset_deg)
+
+    β = deg2rad(install_tilt_deg)
+    γ = deg2rad(install_azimuth_deg)
+
+    n0x = sin(β) * sin(γ)
+    n0y = sin(β) * cos(γ)
+    n0z = cos(β)
+
+    nx = cos.(yaw) .* n0x .- sin.(yaw) .* n0y
+    ny = sin.(yaw) .* n0x .+ cos.(yaw) .* n0y
+    nz = fill(n0z, size(motion, 1))
+
+    nh = sqrt.(nx .^ 2 .+ ny .^ 2)
+    tilt = atan.(nh, pv_smooth_abs.(nz))
+
+    azimuth_raw = atan.(nx, ny)
+    azimuth = mod.(azimuth_raw, 2π)
+
+    return rad2deg.(tilt), rad2deg.(azimuth), nz
+end
+
+function panel_tilt_azimuth_3dof(
+    motion::AbstractVector{<:Real},
+    install_tilt_deg::Real = 0.0,
+    install_azimuth_deg::Real = 0.0,
+    yaw_offset_deg::Real = 0.0,
+)
+    @assert length(motion) == 3 "3-DOF motion vector must have length 3"
+
+    tilt, azimuth, nz = panel_tilt_azimuth_3dof(
+        reshape(motion, 1, :),
+        install_tilt_deg,
+        install_azimuth_deg,
+        yaw_offset_deg,
+    )
+
+    return tilt[1], azimuth[1], nz[1]
 end
 
 """
