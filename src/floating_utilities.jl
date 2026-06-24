@@ -21,6 +21,13 @@ end
         yaw_offset_deg::Real = 0.0
     ) -> (tilt, azimuth)
 
+    panel_tilt_azimuth(
+        motion::AbstractVector{<:Real},
+        install_tilt_deg::Real = 0.0,
+        install_azimuth_deg::Real = 0.0,
+        yaw_offset_deg::Real = 0.0
+    ) -> (tilt, azimuth)
+
 Compute the panel tilt and azimuth time series from a 6-DOF motion array.
 
 This function interprets columns 4–6 of `motion` as roll, pitch, and yaw,
@@ -55,9 +62,9 @@ true
 """
 function panel_tilt_azimuth(
     motion::AbstractMatrix{<:Real},
-    install_tilt_deg::Real = 0.0,
-    install_azimuth_deg::Real = 0.0,
-    yaw_offset_deg::Real = 0.0,
+    install_tilt_deg::Real=0.0,
+    install_azimuth_deg::Real=0.0,
+    yaw_offset_deg::Real=0.0,
 )
     roll = motion[:, 4]
     pitch = motion[:, 5]
@@ -97,6 +104,69 @@ function panel_tilt_azimuth(
     azimuth = mod.(azimuth_raw, 2π)
 
     return rad2deg.(tilt), rad2deg.(azimuth), nz
+end
+
+function panel_tilt_azimuth(
+    motion::AbstractVector{<:Real},
+    install_tilt_deg::Real=0.0,
+    install_azimuth_deg::Real=0.0,
+    yaw_offset_deg::Real=0.0,
+)
+    tilt, azimuth, nz = panel_tilt_azimuth(
+        reshape(motion, 1, :),
+        install_tilt_deg,
+        install_azimuth_deg,
+        yaw_offset_deg,
+    )
+    return tilt[1], azimuth[1], nz[1]
+end
+
+function panel_tilt_azimuth_3dof(
+    motion::AbstractMatrix{<:Real},
+    install_tilt_deg::Real=0.0,
+    install_azimuth_deg::Real=0.0,
+    yaw_offset_deg::Real=0.0,
+)
+    @assert size(motion, 2) == 3 "3-DOF motion matrix must have 3 columns"
+
+    yaw = motion[:, 3] .+ deg2rad(yaw_offset_deg)
+
+    β = deg2rad(install_tilt_deg)
+    γ = deg2rad(install_azimuth_deg)
+
+    n0x = sin(β) * sin(γ)
+    n0y = sin(β) * cos(γ)
+    n0z = cos(β)
+
+    nx = cos.(yaw) .* n0x .- sin.(yaw) .* n0y
+    ny = sin.(yaw) .* n0x .+ cos.(yaw) .* n0y
+    nz = fill(n0z, size(motion, 1))
+
+    nh = sqrt.(nx .^ 2 .+ ny .^ 2)
+    tilt = atan.(nh, pv_smooth_abs.(nz))
+
+    azimuth_raw = atan.(nx, ny)
+    azimuth = mod.(azimuth_raw, 2π)
+
+    return rad2deg.(tilt), rad2deg.(azimuth), nz
+end
+
+function panel_tilt_azimuth_3dof(
+    motion::AbstractVector{<:Real},
+    install_tilt_deg::Real=0.0,
+    install_azimuth_deg::Real=0.0,
+    yaw_offset_deg::Real=0.0,
+)
+    @assert length(motion) == 3 "3-DOF motion vector must have length 3"
+
+    tilt, azimuth, nz = panel_tilt_azimuth_3dof(
+        reshape(motion, 1, :),
+        install_tilt_deg,
+        install_azimuth_deg,
+        yaw_offset_deg,
+    )
+
+    return tilt[1], azimuth[1], nz[1]
 end
 
 """
@@ -268,19 +338,19 @@ true
 function rolling_average_sapm_cell_temperature(
     total_irradiance::AbstractVector{<:TotalIrradiance},
     weather_data::WeatherSample;
-    time_window::Real = 5 * 60.0,  # 5 minute rolling average
-    a::Real = -3.47,
-    b::Real = -0.0594,
-    deltaT::Real = 3.0,
-    irrad_ref::Real = 1000.0,
+    time_window::Real=5 * 60.0,  # 5 minute rolling average
+    a::Real=-3.47,
+    b::Real=-0.0594,
+    deltaT::Real=3.0,
+    irrad_ref::Real=1000.0,
 )
     cell_temperature = sapm_cell_temperature(
         total_irradiance,
         weather_data;
-        a = a,
-        b = b,
-        deltaT = deltaT,
-        irrad_ref = irrad_ref,
+        a=a,
+        b=b,
+        deltaT=deltaT,
+        irrad_ref=irrad_ref,
     )
 
     temps = getfield.(cell_temperature, :cell_temperature)
@@ -321,10 +391,10 @@ function _ray_intersects_box(
     origin::NTuple{3,<:Real},
     dir::NTuple{3,<:Real},
     box::BoxObstacle;
-    height_frac::Real = 0.5,
-    xy_hardness::Real = 100.0,
-    z_hardness::Real = 100.0,
-    eps_z::Real = 1e-6,
+    height_frac::Real=0.5,
+    xy_hardness::Real=100.0,
+    z_hardness::Real=100.0,
+    eps_z::Real=1e-6,
 )
     zc = box.zmin + height_frac * (box.zmax - box.zmin)
 
@@ -332,13 +402,13 @@ function _ray_intersects_box(
     xh = origin[1] + t * dir[1]
     yh = origin[2] + t * dir[2]
 
-    sx1 = PVlib.pv_smooth_step(xh - box.xmin; hardness = xy_hardness)
-    sx2 = PVlib.pv_smooth_step(box.xmax - xh; hardness = xy_hardness)
-    sy1 = PVlib.pv_smooth_step(yh - box.ymin; hardness = xy_hardness)
-    sy2 = PVlib.pv_smooth_step(box.ymax - yh; hardness = xy_hardness)
+    sx1 = PVlib.pv_smooth_step(xh - box.xmin; hardness=xy_hardness)
+    sx2 = PVlib.pv_smooth_step(box.xmax - xh; hardness=xy_hardness)
+    sy1 = PVlib.pv_smooth_step(yh - box.ymin; hardness=xy_hardness)
+    sy2 = PVlib.pv_smooth_step(box.ymax - yh; hardness=xy_hardness)
 
     in_xy = sx1 * sx2 * sy1 * sy2
-    forward = PVlib.pv_smooth_step(t; hardness = z_hardness)
+    forward = PVlib.pv_smooth_step(t; hardness=z_hardness)
 
     return forward * in_xy
 end
@@ -457,8 +527,8 @@ function get_shaded_fraction(
     panel_azimuth_deg::Real,
     panel::Panel,
     obstacle::BoxObstacle;
-    nx::Int = 40,
-    ny::Int = 40,
+    nx::Int=40,
+    ny::Int=40,
 )
     sun_vec = _sun_vector_panel(solar_position, panel_tilt_deg, panel_azimuth_deg)
 
@@ -483,8 +553,8 @@ function get_shaded_fraction(
     panel_azimuth_deg::AbstractVector{<:Real},
     panel::Panel,
     obstacle::BoxObstacle;
-    nx::Int = 40,
-    ny::Int = 40,
+    nx::Int=40,
+    ny::Int=40,
 )
     return [
         get_shaded_fraction(
@@ -493,8 +563,8 @@ function get_shaded_fraction(
             panel_azimuth_deg[ii],
             panel,
             obstacle;
-            nx = nx,
-            ny = ny,
+            nx=nx,
+            ny=ny,
         ) for ii in eachindex(panel_tilt_deg)
     ]
 end
@@ -661,10 +731,10 @@ function sapm_dc_components_shaded(
     effective_irradiance::EffectiveIrradiance,
     cell_temperature::CellTemperature,
     power_norm::Real,
-    temperature_ref::Real = 25.0,
-    irradiance_ref::Real = 1000.0,
-    q::Real = 1.602176634e-19,
-    kb::Real = 1.380649e-23,
+    temperature_ref::Real=25.0,
+    irradiance_ref::Real=1000.0,
+    q::Real=1.602176634e-19,
+    kb::Real=1.380649e-23,
 )
 
     dc_components = sapm_dc_components(
@@ -696,10 +766,10 @@ function sapm_dc_components_shaded(
     effective_irradiance::Vector{<:EffectiveIrradiance},
     cell_temperature::Vector{<:CellTemperature},
     power_norm::Vector{<:Real},
-    temperature_ref::Real = 25.0,
-    irradiance_ref::Real = 1000.0,
-    q::Real = 1.602176634e-19,
-    kb::Real = 1.380649e-23,
+    temperature_ref::Real=25.0,
+    irradiance_ref::Real=1000.0,
+    q::Real=1.602176634e-19,
+    kb::Real=1.380649e-23,
 )
 
     n = length(effective_irradiance)
