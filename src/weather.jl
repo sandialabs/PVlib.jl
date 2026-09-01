@@ -65,16 +65,16 @@ end
 # Constructor for WeatherSample that allows keyword arguments and converts to type T, with missing defaults.
 function WeatherSample{T}(;
     time::ZonedDateTime,
-    ghi=missing,
-    dni=missing,
-    dhi=missing,
-    temp_air=missing,
-    temp_dew=missing,
-    relative_humidity=missing,
-    pressure=missing,
-    wind_speed=missing,
-    wind_direction=missing,
-    albedo=missing,
+    ghi = missing,
+    dni = missing,
+    dhi = missing,
+    temp_air = missing,
+    temp_dew = missing,
+    relative_humidity = missing,
+    pressure = missing,
+    wind_speed = missing,
+    wind_direction = missing,
+    albedo = missing,
 ) where {T}
 
     return WeatherSample{T}(
@@ -115,14 +115,14 @@ end
 function _fetch_tmy_data(
     latitude::Real,
     longitude::Real,
-    require_ssl_verification::Bool=true,
+    require_ssl_verification::Bool = true,
 )
 
     params = Dict("lat" => latitude, "lon" => longitude, "outputformat" => "json")
     response = get(
         EUROPA_URL * "tmy",
-        query=params,
-        require_ssl_verification=require_ssl_verification,
+        query = params,
+        require_ssl_verification = require_ssl_verification,
     )
     return parse(String(response.body))
 end
@@ -133,7 +133,7 @@ function _process_tmy_data(
     start_date::Date,
     end_date::Date,
     timezone::TimeZone;
-    T::Type=Float64,
+    T::Type = Float64,
 )
 
     hourly = src["outputs"]["tmy_hourly"]  # array of dict-like objects
@@ -144,7 +144,7 @@ function _process_tmy_data(
     for rec in hourly
         # --- time ---
         t_utc = _parse_pvgis_time_utc(rec["time(UTC)"])
-        t_loc = ZonedDateTime(t_utc, timezone; from_utc=true)
+        t_loc = ZonedDateTime(t_utc, timezone; from_utc = true)
 
         _in_range(t_loc, start_date, end_date) || continue
 
@@ -162,15 +162,15 @@ function _process_tmy_data(
         push!(
             out,
             WeatherSample{T}(
-                time=t_loc,
-                ghi=ghi,
-                dni=dni,
-                dhi=dhi,
-                temp_air=Ta,
-                relative_humidity=rh,
-                pressure=sp,
-                wind_speed=ws,
-                wind_direction=wd,
+                time = t_loc,
+                ghi = ghi,
+                dni = dni,
+                dhi = dhi,
+                temp_air = Ta,
+                relative_humidity = rh,
+                pressure = sp,
+                wind_speed = ws,
+                wind_direction = wd,
             ),
         )
     end
@@ -179,8 +179,8 @@ function _process_tmy_data(
 end
 
 function _format_nsrdb_wkt(latitude::Real, longitude::Real)
-    lon = round(longitude, digits=4)
-    lat = round(latitude, digits=4)
+    lon = round(longitude, digits = 4)
+    lat = round(latitude, digits = 4)
     return "POINT($lon $lat)"
 end
 
@@ -195,16 +195,16 @@ function _fetch_nsrdb_psm4_tmy(
     longitude::Real,
     api_key::AbstractString,
     email::AbstractString;
-    name::AbstractString="tmy",
-    time_step::Int=60,
-    parameters=NSRDB_DEFAULT_PARAMETERS,
-    leap_day::Bool=false,
-    full_name::AbstractString="PVlib.jl",
-    affiliation::AbstractString="PVlib.jl",
-    utc::Bool=false,
-    require_ssl_verification::Bool=true,
-    timeout::Real=30,
-    url::AbstractString=PSM4_TMY_URL,
+    name::AbstractString = "tmy",
+    time_step::Int = 60,
+    parameters = NSRDB_DEFAULT_PARAMETERS,
+    leap_day::Bool = false,
+    full_name::AbstractString = "PVlib.jl",
+    affiliation::AbstractString = "PVlib.jl",
+    utc::Bool = false,
+    require_ssl_verification::Bool = true,
+    timeout::Real = 10,
+    url::AbstractString = PSM4_TMY_URL,
 )
 
     params = Dict(
@@ -224,9 +224,9 @@ function _fetch_nsrdb_psm4_tmy(
 
     response = get(
         url,
-        query=params,
-        require_ssl_verification=require_ssl_verification,
-        timeout=connect_timeout,
+        query = params,
+        require_ssl_verification = require_ssl_verification,
+        connect_timeout = timeout,
     )
 
     return String(response.body)
@@ -250,7 +250,7 @@ end
 function _nsrdb_row_to_weather_sample(
     row::AbstractDict{<:AbstractString,<:AbstractString},
     timezone::TimeZone;
-    T::Type=Float64,
+    T::Type = Float64,
 )
     year = Base.parse(Int, strip(row["Year"]))
     month = Base.parse(Int, strip(row["Month"]))
@@ -261,24 +261,24 @@ function _nsrdb_row_to_weather_sample(
     t = ZonedDateTime(DateTime(year, month, day, hour, minute), timezone) - Minute(30)
 
     return WeatherSample{T}(
-        time=t,
-        ghi=_parse_nsrdb_value(row, "GHI"),
-        dni=_parse_nsrdb_value(row, "DNI"),
-        dhi=_parse_nsrdb_value(row, "DHI"),
-        temp_air=_parse_nsrdb_value(row, "Temperature"),
-        temp_dew=_parse_nsrdb_value(row, "Dew Point"),
-        pressure=_parse_nsrdb_value(row, "Pressure"),
-        wind_speed=_parse_nsrdb_value(row, "Wind Speed"),
-        wind_direction=_parse_nsrdb_value(row, "Wind Direction"),
-        albedo=_parse_nsrdb_value(row, "Surface Albedo"),
+        time = t,
+        ghi = _parse_nsrdb_value(row, "GHI"),
+        dni = _parse_nsrdb_value(row, "DNI"),
+        dhi = _parse_nsrdb_value(row, "DHI"),
+        temp_air = _parse_nsrdb_value(row, "Temperature"),
+        temp_dew = _parse_nsrdb_value(row, "Dew Point"),
+        pressure = _parse_nsrdb_value(row, "Pressure"),
+        wind_speed = _parse_nsrdb_value(row, "Wind Speed"),
+        wind_direction = _parse_nsrdb_value(row, "Wind Direction"),
+        albedo = _parse_nsrdb_value(row, "Surface Albedo"),
     )
 end
 
 function _parse_nsrdb_psm4_csv(
     csv_text::AbstractString;
-    start_monthday::Union{Nothing,Tuple{Int,Int}}=nothing,
-    end_monthday::Union{Nothing,Tuple{Int,Int}}=nothing,
-    T::Type=Float64,
+    start_monthday::Union{Nothing,Tuple{Int,Int}} = nothing,
+    end_monthday::Union{Nothing,Tuple{Int,Int}} = nothing,
+    T::Type = Float64,
 )
 
     lines = split(replace(csv_text, "\r\n" => "\n", '\r' => '\n'), '\n')
@@ -302,7 +302,7 @@ function _parse_nsrdb_psm4_csv(
         length(values) < length(columns) && continue
 
         row = Dict(columns[i] => values[i] for i in eachindex(columns))
-        sample = _nsrdb_row_to_weather_sample(row, tz; T=T)
+        sample = _nsrdb_row_to_weather_sample(row, tz; T = T)
 
         if !isnothing(start_monthday) && !isnothing(end_monthday)
             _in_monthday_range(sample.time, start_monthday, end_monthday) || continue
@@ -362,11 +362,11 @@ function get_meteorological_data_pvgis(
     start_date::Date,
     end_date::Date,
     timezone,
-    require_ssl_verification::Bool=true,
+    require_ssl_verification::Bool = true,
 )
 
     src = _fetch_tmy_data(latitude, longitude, require_ssl_verification)
-    return _process_tmy_data(src, start_date, end_date, timezone; T=Float64)
+    return _process_tmy_data(src, start_date, end_date, timezone; T = Float64)
 end
 
 """
@@ -423,9 +423,9 @@ function get_meteorological_data_nsrdb(
     longitude::Real,
     api_key::AbstractString,
     email::AbstractString,
-    start_monthday::Union{Nothing,Tuple{Int,Int}}=(1, 1),
-    end_monthday::Union{Nothing,Tuple{Int,Int}}=(12, 31),
-    require_ssl_verification::Bool=true,
+    start_monthday::Union{Nothing,Tuple{Int,Int}} = (1, 1),
+    end_monthday::Union{Nothing,Tuple{Int,Int}} = (12, 31),
+    require_ssl_verification::Bool = true,
 )
 
     csv_text = _fetch_nsrdb_psm4_tmy(
@@ -433,14 +433,14 @@ function get_meteorological_data_nsrdb(
         longitude,
         api_key,
         email;
-        require_ssl_verification=require_ssl_verification,
+        require_ssl_verification = require_ssl_verification,
     )
 
     return _parse_nsrdb_psm4_csv(
         csv_text;
-        start_monthday=start_monthday,
-        end_monthday=end_monthday,
-        T=Float64,
+        start_monthday = start_monthday,
+        end_monthday = end_monthday,
+        T = Float64,
     )
 end
 
