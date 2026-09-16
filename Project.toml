@@ -30,7 +30,7 @@ Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [compat]
 AxisArrays = "0.4.8"
-CSV = "0.10.15"
+CSV = "0.10.15, 1"
 ChainRulesCore = "1.26.1"
 DataFrames = "1.8.1"
 Documenter = "1.17.0"
