@@ -1,5 +1,8 @@
 # PVlib.jl
 
+[![CI](https://github.com/sandialabs/PVlib.jl/actions/workflows/CI.yaml/badge.svg)](https://github.com/sandialabs/PVlib.jl/actions/workflows/CI.yaml)
+[![codecov](https://codecov.io/gh/sandialabs/PVlib.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/sandialabs/PVlib.jl)
+
 `PVlib.jl` is a Julia package for photovoltaic system modeling and optimization. It provides a Julia-native implementation of selected photovoltaic performance models, with a focus on workflows that benefit from automatic differentiation, gradient-based optimization, and integration with other renewable energy models.
 
 The package includes tools for solar position calculation, plane-of-array irradiance, module temperature, effective irradiance, DC power modeling, and AC power modeling. It also adds utilities for floating photovoltaic applications, including time-varying panel orientation from platform motion, rolling-average cell temperature, ocean surface albedo, and geometric shading from nearby obstacles.

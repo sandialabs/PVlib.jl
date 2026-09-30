@@ -5,7 +5,6 @@ using JSON: parse
 using Dates: Date, DateTime, Second, @dateformat_str, UTC, dayofyear, value
 using TimeZones: ZonedDateTime, TimeZone, Millisecond, month, day, Minute
 using CSV: File
-using Plots: plot
 using Statistics: mean
 using LinearAlgebra
 using RecipesBase
